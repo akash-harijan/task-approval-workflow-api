@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Annotated, Union
 from uuid import UUID, uuid4
 from datetime import datetime
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class TaskStatus(str, Enum):
