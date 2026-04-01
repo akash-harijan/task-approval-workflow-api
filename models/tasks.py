@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Annotated, Union
 from uuid import UUID, uuid4
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class TaskStatus(str, Enum):
@@ -40,13 +40,11 @@ class DataAccessTask(TaskBase):
     access_level: str = Field(..., pattern="^(read|write|admin)$")
     data_classification: str = Field(..., pattern="^(public|internal|confidential|restricted)$")
 
-    @field_validator("access_level")
-    @classmethod
-    def admin_requires_restricted(cls, v, info):
-        # For admin access, we require the data_classification to be 'restricted'.
-        # This check depends on multiple fields, so we perform the actual validation in the model_validator.
-        # That's why this field-level validator doesn't enforce it directly.
-        return v
+    @model_validator(mode="after")
+    def admin_requires_restricted(self):
+        if self.access_level == "admin" and self.data_classification != "restricted":
+            raise ValueError("Admin access level requires data_classification='restricted'.")
+        return self
 
 
 class ResourceProvisionTask(TaskBase):
@@ -68,14 +66,11 @@ class ConfigChangeTask(TaskBase):
     requires_downtime: bool = False
     rollback_plan: str | None = None
 
-    @field_validator("rollback_plan")
-    @classmethod
-    def downtime_needs_rollback(cls, v, info):
-        # if requires_downtime is True, rollback_plan must be provided
-        data = info.data
-        if data.get("requires_downtime") and not v:
+    @model_validator(mode="after")
+    def downtime_needs_rollback(self):
+        if self.requires_downtime and not self.rollback_plan:
             raise ValueError("rollback_plan is required when requires_downtime is True")
-        return v
+        return self
 
 
 # This is a discriminated union, letting Pydantic choose the correct model based on the "type" field.
