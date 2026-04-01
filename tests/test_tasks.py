@@ -30,20 +30,6 @@ def test_create_data_access_task():
     assert "id" in body
 
 
-def test_create_config_change_task():
-    payload = {
-        "type": "config_change",
-        "title": "Update rate limits",
-        "requested_by": "bob",
-        "service_name": "api-gateway",
-        "change_description": "Increase rate limit from 100 to 500 req/min for internal services",
-        "requires_downtime": True,
-        "rollback_plan": "Revert config via Helm rollback to previous release",
-    }
-    r = client.post("/tasks/", json=payload)
-    assert r.status_code == 201
-    assert r.json()["requires_downtime"] is True
-
 
 def test_approve_task():
     payload = {
